@@ -6,8 +6,6 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 
-import java.util.List;
-
 @SpringBootApplication
 public class McpMcRconApplication {
 
@@ -17,7 +15,7 @@ public class McpMcRconApplication {
 
 
     @Bean
-    public ToolCallbackProvider listTools(ListService listService) {
+    public ToolCallbackProvider listTools(PlayerQuery listService) {
         return  MethodToolCallbackProvider.builder().toolObjects(listService).build();
     }
 

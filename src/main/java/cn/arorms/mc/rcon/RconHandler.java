@@ -1,6 +1,7 @@
 package cn.arorms.mc.rcon;
 
 import org.springframework.ai.tool.annotation.Tool;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.io.*;
@@ -12,37 +13,28 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Simple Minecraft RCON client (pure Java, no deps).
- * - Authenticates with RCON
- * - Sends "list" command
- * - Collects/merges response packets
- * - Prints raw response and extracts online/max/players
- * 
- * Notes:
- * - RCON uses little-endian for int32 fields.
- * - Packet structure:
- *   size:int32LE (size of id+type+body+2 null)
- *   id:int32LE
- *   type:int32LE
- *   body:bytes
- *   2x null bytes
+ * RCON Client Handler
+ * @version 1.0 2025-11-05
+ * @author Cacciatore
  */
 @Service
-public class ListService {
-    // ---------- CONFIG ----------
-    static final String HOST = "127.0.0.1";   
-    static final int PORT = 25575;            
-    static final String PASSWORD = "20230612";
-    static final int SO_TIMEOUT_MS = 5000;    
-    // ----------------------------
-
-    // RCON types
+public class RconHandler {
+    
+    private final MinecraftServerProperties props;
+    private static final int SO_TIMEOUT_MS = 5000;
     static final int SERVERDATA_RESPONSE_VALUE = 0;
     static final int SERVERDATA_EXECCOMMAND = 2;
     static final int SERVERDATA_AUTH = 3;
 
-    @Tool(description = "Get the player list of server")
-    public String doRconList(String host, int port, String password) throws Exception {
+    public RconHandler(MinecraftServerProperties props) {
+        this.props = props;
+    }
+
+    public String query(String command) throws Exception {
+        return query(props.getAddress(), props.getRconPort(), props.getRconPassword(), command);
+    }
+    
+    public static String query(String host, int port, String password, String command) throws Exception {
         try (Socket sock = new Socket()) {
             sock.connect(new InetSocketAddress(host, port), SO_TIMEOUT_MS);
             sock.setSoTimeout(SO_TIMEOUT_MS);
@@ -65,7 +57,7 @@ public class ListService {
 
                 // 2) send "list" command
                 int cmdId = newRandomId();
-                byte[] cmdPacket = makePacket(cmdId, SERVERDATA_EXECCOMMAND, "list".getBytes("UTF-8"));
+                byte[] cmdPacket = makePacket(cmdId, SERVERDATA_EXECCOMMAND, command.getBytes("UTF-8"));
                 out.write(cmdPacket);
                 out.flush();
 
