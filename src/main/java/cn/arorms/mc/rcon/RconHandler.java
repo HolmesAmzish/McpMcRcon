@@ -1,6 +1,5 @@
 package cn.arorms.mc.rcon;
 
-import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -9,8 +8,6 @@ import java.net.*;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Random;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * RCON Client Handler
@@ -20,30 +17,40 @@ import java.util.regex.Pattern;
 @Service
 public class RconHandler {
     
-    private final MinecraftServerProperties props;
+    @Value("${minecraft.server.address}")
+    String serverAddress;
+    @Value("${minecraft.server.rcon-port}")
+    int rconPort;
+    @Value("${minecraft.server.rcon-password}")
+    String rconPassword;
+    
     private static final int SO_TIMEOUT_MS = 5000;
     static final int SERVERDATA_RESPONSE_VALUE = 0;
     static final int SERVERDATA_EXECCOMMAND = 2;
     static final int SERVERDATA_AUTH = 3;
-
-    public RconHandler(MinecraftServerProperties props) {
-        this.props = props;
-    }
-
-    public String query(String command) throws Exception {
-        return query(props.getAddress(), props.getRconPort(), props.getRconPassword(), command);
+    
+    public RconHandler(String serverAddress, int rconPort, String rconPassword) {
+        this.serverAddress = serverAddress;
+        this.rconPort = rconPort;
+        this.rconPassword = rconPassword;
     }
     
-    public static String query(String host, int port, String password, String command) throws Exception {
+    public RconHandler() {
+        this.serverAddress = serverAddress;
+        this.rconPort = rconPort;
+        this.rconPassword = rconPassword;
+    }
+    
+    public String query(String command) throws Exception {
         try (Socket sock = new Socket()) {
-            sock.connect(new InetSocketAddress(host, port), SO_TIMEOUT_MS);
+            sock.connect(new InetSocketAddress(serverAddress, rconPort), SO_TIMEOUT_MS);
             sock.setSoTimeout(SO_TIMEOUT_MS);
 
             try (DataOutputStream out = new DataOutputStream(sock.getOutputStream());
                  DataInputStream in = new DataInputStream(sock.getInputStream())) {
                 // 1) AUTH
                 int authId = newRandomId();
-                byte[] authPacket = makePacket(authId, SERVERDATA_AUTH, password.getBytes("UTF-8"));
+                byte[] authPacket = makePacket(authId, SERVERDATA_AUTH, rconPassword.getBytes("UTF-8"));
                 out.write(authPacket);
                 out.flush();
 

@@ -15,8 +15,7 @@ public class McpMcRconApplication {
 
 
     @Bean
-    public ToolCallbackProvider listTools(PlayerQuery listService) {
+    public ToolCallbackProvider listTools(PlayerStatusTools listService) {
         return  MethodToolCallbackProvider.builder().toolObjects(listService).build();
     }
-
 }
